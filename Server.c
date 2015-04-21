@@ -1,45 +1,83 @@
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <errno.h>
-#include <string.h>
-#include <sys/types.h>
-#include <time.h> 
-
-int main(int argc, char *argv[])
+#include <string.h>    //strlen
+#include <sys/socket.h>
+#include <arpa/inet.h> //inet_addr
+#include <unistd.h>    //write
+ 
+int main(int argc , char *argv[])
 {
-    //declara socket
-    int listenfd = 0, connfd = 0;
-    struct sockaddr_in serv_addr; 
+    int socket_desc , client_sock , c , read_size;
+    struct sockaddr_in server , client;
+    char client_message[2000];
 
-    char sendBuff[1025];
-    time_t ticks; 
-
-    // constrói socket
-    listenfd = socket(AF_INET, SOCK_STREAM, 0);
-    memset(&serv_addr, '0', sizeof(serv_addr));
-    memset(sendBuff, '0', sizeof(sendBuff)); 
-
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    serv_addr.sin_port = htons(5000); //porta
-
-    bind(listenfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)); //bind com client
-
-    listen(listenfd, 10); //max de 10 clients
-
-    while(1)
+    //Arquivo
+    FILE *arq;
+     
+    //Cria o socket
+    socket_desc = socket(AF_INET , SOCK_STREAM , 0);
+    if (socket_desc == -1)
     {
-        connfd = accept(listenfd, (struct sockaddr*)NULL, NULL); //aceita um client
+        printf("Could not create socket");
+    }
+    puts("Socket created");
+     
+    //Prepara o socket
+    server.sin_family = AF_INET;
+    server.sin_addr.s_addr = INADDR_ANY;
+    server.sin_port = htons( 5000 );
+     
+    //Bind
+    if( bind(socket_desc,(struct sockaddr *)&server , sizeof(server)) < 0)
+    {
+        //print de erro
+        perror("bind failed. Error");
+        return 1;
+    }
+    puts("bind done");
+     
+    //Listen
+    listen(socket_desc , 3);
+     
+    //Aguarda conexão
+    puts("Waiting for incoming connections...");
+    c = sizeof(struct sockaddr_in);
+     
+    //aceita conexão de um client
+    client_sock = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c);
+    if (client_sock < 0)
+    {
+        perror("accept failed");
+        return 1;
+    }
+    puts("Connection accepted");
+     
+    //Recebe uma mensagem do cliente
+    while( (read_size = recv(client_sock , client_message , 2000 , 0)) > 0 )
+    {
+        // Abre/Cria o arquivo para escrita
+        if ((arq = fopen("TESTE.txt", "w")) == NULL)
+        {
+            printf("Não foi possivel abrir o arquivo.\n");
+            return 1;
+        }
 
-        ticks = time(NULL);
-        snprintf(sendBuff, sizeof(sendBuff), "%.24s\r\n", ctime(&ticks));
-        write(connfd, sendBuff, strlen(sendBuff)); 
-
-        close(connfd);
-        sleep(1);
-     }
+        fputs(client_message, arq); //Salva a mensagem no arquivo
+        fclose(arq); //Fecha o arquivo
+        
+        // write(client_sock , client_message , strlen(client_message)); //devolve a mensagem pro cliente
+        write(client_sock, "Noticia enviada com sucesso!!\n",strlen(client_message));
+        bzero(client_message,sizeof(client_message)); // Zera o buffer que devolve a mensagem pro cliente.
+    }
+     
+    if(read_size == 0)
+    {
+        puts("Client disconnected");
+        fflush(stdout);
+    }
+    else if(read_size == -1)
+    {
+        perror("recv failed");
+    }
+     
+    return 0;
 }

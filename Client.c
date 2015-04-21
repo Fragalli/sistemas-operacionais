@@ -1,65 +1,62 @@
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <netinet/in.h>
-#include <netdb.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <errno.h>
-#include <arpa/inet.h> 
-
-int main(int argc, char *argv[])
+#include <stdio.h> //printf
+#include <string.h>    //strlen
+#include <sys/socket.h>    //socket
+#include <arpa/inet.h> //inet_addr
+ 
+int main(int argc , char *argv[])
 {
-    // Declaraçao do socket
-    int sockfd = 0, n = 0;
-    char recvBuff[1024];
-    // struct com os dados do host a quem vamos nos comunicar, é preenchida durante o código
-    struct sockaddr_in serv_addr; 
-
-    if(argc != 2)
+    int sock;
+    struct sockaddr_in server;
+    char message[1000] , server_reply[2000];
+     
+    //Criação do socket
+    sock = socket(AF_INET , SOCK_STREAM , 0);
+    if (sock == -1)
     {
-        printf("\n Usage: %s <ip of server> \n",argv[0]);
+        printf("Could not create socket");
+    }
+    puts("Socket created");
+     
+    server.sin_addr.s_addr = inet_addr("10.0.0.101"); //Alterar para o ip atual
+    server.sin_family = AF_INET;
+    server.sin_port = htons( 5000 );
+ 
+    //Conecta com o server
+    if (connect(sock , (struct sockaddr *)&server , sizeof(server)) < 0)
+    {
+        perror("connect failed. Error");
         return 1;
-    } 
-
-    memset(recvBuff, '0',sizeof(recvBuff));
-    if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) //criacao do socket, o 0 no final se refere ao IP(Internet Protocol)
+    }
+     
+    puts("Connected\n");
+     
+    //Mantem a conexão com o server
+    while(1)
     {
-        printf("\n Error : Could not create socket \n");//caso dê erro
-        return 1;
-    } 
-
-    memset(&serv_addr, '0', sizeof(serv_addr)); 
-
-    serv_addr.sin_family = AF_INET; //ARPA INTERNET PROTOCOLS
-    serv_addr.sin_port = htons(5000); //porta que estamos usando
-
-    if(inet_pton(AF_INET, argv[1], &serv_addr.sin_addr)<=0)
-    {
-        printf("\n inet_pton error occured\n");//caso dê erro
-        return 1;
-    } 
-
-    if( connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)//coneccao do cliente com um serviço
-    {
-       printf("\n Error : Connect Failed \n");//caso dê erro
-       return 1;
-    } 
-
-    while ( (n = read(sockfd, recvBuff, sizeof(recvBuff)-1)) > 0)
-    {
-        recvBuff[n] = 0;
-        if(fputs(recvBuff, stdout) == EOF)
+        bzero(message,sizeof(message)); //Zera o buffer que contem o envio da mensagem desejada
+        bzero(server_reply,sizeof(server_reply)); //Zera o buffer que recebe o retorno do server
+        printf("Enter message : ");
+        // scanf("%s" , message);
+        gets(message); //Não é seguro
+         
+        //Envia um dado
+        if( send(sock , message , strlen(message) , 0) < 0)
         {
-            printf("\n Error : Fputs error\n");//caso dê erro
+            puts("Send failed");
+            return 1;
         }
-    } 
-
-    if(n < 0)
-    {
-        printf("\n Read error \n");
-    } 
-
+         
+        //Recebe uma mensagem do servidor
+        if( recv(sock , server_reply , 2000 , 0) < 0)
+        {
+            puts("recv failed");
+            break;
+        }
+         
+        puts("\nServer reply :");
+        puts(server_reply);
+    }
+     
+    close(sock);
     return 0;
 }

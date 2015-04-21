@@ -11,27 +11,29 @@
 
 int main(int argc, char *argv[])
 {
+    //declara socket
     int listenfd = 0, connfd = 0;
     struct sockaddr_in serv_addr; 
 
     char sendBuff[1025];
     time_t ticks; 
 
+    // constrói socket
     listenfd = socket(AF_INET, SOCK_STREAM, 0);
     memset(&serv_addr, '0', sizeof(serv_addr));
     memset(sendBuff, '0', sizeof(sendBuff)); 
 
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    serv_addr.sin_port = htons(5000); 
+    serv_addr.sin_port = htons(5000); //porta
 
-    bind(listenfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)); 
+    bind(listenfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)); //bind com client
 
-    listen(listenfd, 10); 
+    listen(listenfd, 10); //max de 10 clients
 
     while(1)
     {
-        connfd = accept(listenfd, (struct sockaddr*)NULL, NULL); 
+        connfd = accept(listenfd, (struct sockaddr*)NULL, NULL); //aceita um client
 
         ticks = time(NULL);
         snprintf(sendBuff, sizeof(sendBuff), "%.24s\r\n", ctime(&ticks));

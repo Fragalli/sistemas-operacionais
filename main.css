@@ -1,0 +1,37 @@
+.titulo-principal{
+    text-align: center;
+    background-color: #851944;
+/*    background-image: url(teste.jpg);*/
+    padding: 2rem;
+    border-bottom: 0.4rem solid black;
+    color: white;
+}
+
+h1{
+    font-size: 3rem;
+    text-shadow: 5px 4px black;
+}
+
+.texto{
+    font-size: 1.2em;
+    background-color: #851944;
+    color: white;
+    padding: 1em;
+    border: 0.2em solid black;
+    width: 45ch;
+    margin: 2em auto;
+    display: block;
+    text-align: center;
+}
+
+.sidebar{
+    float: left;
+    padding-bottom: 100%;
+    padding-right: 10%;
+    background-color: #3C1D3D;
+    border-right: 0.4rem solid black;
+}
+
+body{
+    background-color: antiquewhite;
+}

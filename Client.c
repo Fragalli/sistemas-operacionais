@@ -5,6 +5,7 @@
  
 int main(int argc , char *argv[])
 {
+    //Declarações para os sockets
     int sock;
     struct sockaddr_in server;
     char message[1000] , server_reply[2000];
@@ -17,7 +18,7 @@ int main(int argc , char *argv[])
     }
     puts("Socket created");
      
-    server.sin_addr.s_addr = inet_addr("10.0.0.101"); //Alterar para o ip atual
+    server.sin_addr.s_addr = inet_addr("10.0.0.103"); //Alterar para o ip atual
     server.sin_family = AF_INET;
     server.sin_port = htons( 5000 );
  
@@ -53,8 +54,9 @@ int main(int argc , char *argv[])
             break;
         }
          
-        puts("\nServer reply :");
-        puts(server_reply);
+         printf("\nServer reply: %s\n",server_reply );
+        // puts("\nServer reply :");
+        // puts(server_reply);
     }
      
     close(sock);

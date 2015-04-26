@@ -1,19 +1,33 @@
 #include <stdio.h>
-#include <string.h>    //strlen
+#include <string.h>    
 #include <sys/socket.h>
-#include <arpa/inet.h> //inet_addr
-#include <unistd.h>    //write
+#include <arpa/inet.h> 
+#include <unistd.h>    
  
+//Arquivo principal, deve ser chamado index.html
+FILE *arquivo;
+
+//Arquivo de suporte
+FILE *suporte;
+
+//Buffer para pegar linhas dos arquivos
+char str[2000];
+
+//Função que copia o conteudo do arquivo de suporte para o arquivo principal
+int saveToHtml();
+
+//Main
 int main(int argc , char *argv[])
 {
+    //Declarações para os sockets
     int socket_desc , client_sock , c , read_size;
     struct sockaddr_in server , client;
     char client_message[2000];
 
-    //Arquivo
-    FILE *arq;
+    // Linha usada para percorrer o arquivo
+    int linha = 1;
      
-    //Cria o socket
+    //Cria o socket e retorna um erro caso não for possivel
     socket_desc = socket(AF_INET , SOCK_STREAM , 0);
     if (socket_desc == -1)
     {
@@ -54,19 +68,57 @@ int main(int argc , char *argv[])
     //Recebe uma mensagem do cliente
     while( (read_size = recv(client_sock , client_message , 2000 , 0)) > 0 )
     {
-        // Abre/Cria o arquivo para escrita
-        if ((arq = fopen("TESTE.txt", "w")) == NULL)
+        // Abre o index html para leitura
+        if ((arquivo = fopen("index.html", "r")) == NULL)
         {
             printf("Não foi possivel abrir o arquivo.\n");
             return 1;
         }
 
-        fputs(client_message, arq); //Salva a mensagem no arquivo
-        fclose(arq); //Fecha o arquivo
+        // Abre/Cria o arquivo suporte que é usado para inserir as novas mensagens no html
+        if ((suporte = fopen("suporte.html", "w")) == NULL)
+        {
+            printf("Não foi possivel abrir o arquivo.\n");
+            return 1;
+        }
+
+        // Prepara a mensagem que deve ser enviada para o html para que essa va no formato certo
+        char mensagemASerEnviada[2000] = "\t\t";
+        strcat(mensagemASerEnviada, "<div class=\"texto\">");
+        strcat(mensagemASerEnviada, client_message);
+        strcat(mensagemASerEnviada, "</div>\n");
+
+        //Salva a primeira parte do html no arquivo suporte
+        while(linha <= 13){
+            fgets(str, 3000, arquivo);
+            fputs(str, suporte);
+            linha ++;
+        }
+
+        //Salva a nova mensagem no html
+        fputs(mensagemASerEnviada, suporte); 
+
+        //Salva o restante do index html no arquivo suporte
+        while(fgets(str, 3000, arquivo)){
+            fputs(str, suporte);
+        }
+
+        //Reseta a linha
+        linha = 1;
+
+        //Limpa o buffer para a proxima a mensagem
+        bzero(mensagemASerEnviada, sizeof(mensagemASerEnviada));
+        fclose(arquivo); //Fecha o arquivo
+        fclose(suporte); //Fecha o arquivo de suporte
         
-        // write(client_sock , client_message , strlen(client_message)); //devolve a mensagem pro cliente
-        write(client_sock, "Noticia enviada com sucesso!!\n",strlen(client_message));
-        bzero(client_message,sizeof(client_message)); // Zera o buffer que devolve a mensagem pro cliente.
+        //Substitui o conteudo do index.html pelo conteudo do suporte.html
+        saveToHtml();
+
+        //Devolve uma mensagem para o cliente
+        write(client_sock, "Noticia enviada com sucesso!!",500);
+
+        // Zera o buffer que devolve a mensagem pro cliente.
+        bzero(client_message,sizeof(client_message)); 
     }
      
     if(read_size == 0)
@@ -80,4 +132,27 @@ int main(int argc , char *argv[])
     }
      
     return 0;
+}
+
+// Implementação da função que copia o conteudo do arquivo suporte para o arquivo principal
+int saveToHtml() {
+
+    if ((arquivo = fopen("index.html", "w")) == NULL){
+        printf("Não foi possivel abrir o arquivo.\n");
+        return 0;
+    }
+
+    if ((suporte = fopen("suporte.html", "r")) == NULL) {
+        printf("Não foi possivel abrir o arquivo.\n");
+        return 0;
+    }
+
+    // Sobrescreve o conteudo do index.html pelo conteudo do suporte.html
+    while(fgets(str, 3000, suporte)){
+        fputs(str, arquivo);
+    }
+
+    fclose(arquivo);
+    fclose(suporte);
+    return 1;
 }
